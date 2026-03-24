@@ -15,7 +15,7 @@ jobs:
     steps:
       - name: Build digest markdown file
         env:
-          REPOS: "uclibs/staff-directory-23"
+          REPOS: "uclibs/staff-directory-23 uclibs/ucrate uclibs/application_portfolio"
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
