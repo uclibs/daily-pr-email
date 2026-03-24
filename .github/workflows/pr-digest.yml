@@ -17,6 +17,7 @@ jobs:
         id: build
         env:
           REPOS: "uclibs/staff-directory-23"
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           sudo apt-get update -y
