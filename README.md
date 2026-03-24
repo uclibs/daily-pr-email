@@ -107,7 +107,7 @@ This repo may accumulate many digest issues over time. Since they are labeled `p
 ## Notes / limitations
 
 - This repository must have **GitHub Actions enabled**.
-- Scheduled workflows only run based on the workflow file on the repo’s **default branch** (`main`).
+- Scheduled workflows only run based on the workflow file on the repo’s **default branch** (usually`qa` for UC).
 - Creating a new Issue each run generates a lot of Issues and emails if the schedule is frequent.
 
 ## Customization ideas
