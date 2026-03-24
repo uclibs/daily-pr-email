@@ -1,0 +1,72 @@
+name: Daily PR Email
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"   # every 5 minutes (testing)
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build digest markdown
+        id: build
+        env:
+          REPOS: "uclibs/staff-directory-23"
+        run: |
+          set -euo pipefail
+          sudo apt-get update -y
+          sudo apt-get install -y jq
+
+          now="$(date -u '+%Y-%m-%d %H:%M UTC')"
+
+          body="## PR Digest (${now})\n\n"
+          body="${body}_Open PRs; excluding drafts; excluding titles starting with **WIP**._\n\n"
+
+          for r in $REPOS; do
+            prs_json=$(gh pr list -R "$r" --state open --json number,title,url,author,isDraft)
+
+            filtered=$(echo "$prs_json" | jq '
+              [ .[]
+                | select(.isDraft == false)
+                | select((.title | ascii_downcase | startswith("wip")) | not)
+              ]')
+
+            count=$(echo "$filtered" | jq 'length')
+
+            body="${body}### ${r}\n"
+            if [ "$count" -eq 0 ]; then
+              body="${body}- (no open PRs)\n\n"
+              continue
+            fi
+
+            lines=$(echo "$filtered" | jq -r '.[] | "- [#\(.number) \(.title)](\(.url)) — @\(.author.login)"')
+            body="${body}${lines}\n\n"
+          done
+
+          {
+            echo "body<<'EOF'"
+            echo -e "$body"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create a new issue (each run)
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const body = `${{ toJSON(steps.build.outputs.body) }}`.slice(1, -1);
+
+            // Unique title so you get distinct emails while testing
+            const title = `PR Digest TEST - run ${context.runId}`;
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              body,
+              labels: ["pr-digest"]
+            });
