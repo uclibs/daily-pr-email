@@ -2,9 +2,9 @@ name: Daily PR Email
 
 on:
   schedule:
-     # GitHub cron uses UTC.
-     # 5:00 AM EST (UTC-5) = 10:00 UTC
-     # (During EDT this will run at 6:00 AM localtime.)
+    # GitHub cron uses UTC.
+    # 5:00 AM EST (UTC-5) = 10:00 UTC
+    # (During EDT this will run at 6:00 AM local time.)
     - cron: "0 10 * * 1-5"
   workflow_dispatch: {}
 
@@ -56,7 +56,7 @@ jobs:
             } >> digest.md
           done
 
-      - name: Create new digest issue and close previous ones
+      - name: Create new digest issue
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -64,28 +64,8 @@ jobs:
 
           title="PR Digest - run $GITHUB_RUN_ID"
 
-          # Create the new issue; capture the created issue URL
-          new_url=$(gh issue create \
+          gh issue create \
             --repo "$GITHUB_REPOSITORY" \
             --title "$title" \
             --body-file digest.md \
-            --label "pr-digest")
-
-          echo "Created: $new_url"
-
-          # Extract issue number from the URL
-          new_number="${new_url##*/}"
-
-          # Close all other OPEN issues with label pr-digest
-          gh issue list \
-            --repo "$GITHUB_REPOSITORY" \
-            --state open \
-            --label "pr-digest" \
-            --json number \
-            --jq '.[].number' \
-          | while read -r n; do
-              if [ "$n" != "$new_number" ]; then
-                echo "Closing old digest issue #$n"
-                gh issue close "$n" --repo "$GITHUB_REPOSITORY"
-              fi
-            done
+            --label "pr-digest"
