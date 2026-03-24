@@ -1,12 +1,12 @@
 # daily-pr-email
 
-This repository contains a GitHub Actions workflow that periodically collects open Pull Requests (PRs) from one or more GitHub repositories and publishes a digest as a **new GitHub Issue** each run.
+This repository contains a GitHub Actions workflow that collects open Pull Requests (PRs) from one or more GitHub repositories and publishes a digest as a **new GitHub Issue** each run.
 
-GitHub’s own notification system can then deliver that Issue to your inbox (e.g., Outlook) as email—no SMTP setup required.
+GitHub’s notification system can then deliver that Issue to your inbox (e.g., Outlook) as email—no SMTP setup required.
 
 ## What it does
 
-On a schedule (currently every 5 minutes for testing), the workflow:
+On a schedule, the workflow:
 
 1. Queries a configured list of repositories for **open PRs**
 2. Filters out:
@@ -15,7 +15,7 @@ On a schedule (currently every 5 minutes for testing), the workflow:
 3. Generates a short Markdown digest containing only:
    - PR title
    - Link to PR
-4. Creates a **new Issue** in this repository containing the digest
+4. Creates a **new Issue** in this repository containing the digest (labeled `pr-digest`)
 
 Because each run creates a new Issue, you can receive **distinct emails** (one per run) via GitHub Notifications.
 
@@ -34,24 +34,26 @@ Edit the workflow file:
 Find the `REPOS` environment variable and add repositories as a **space-separated** list in `owner/repo` format:
 
     env:
-      REPOS: "uclibs/staff-directory-23 uclibs/ucrate"
+      REPOS: "uclibs/staff-directory-23 uclibs/ucrate uclibs/application_portfolio"
 
-### 2) Configure how often it runs
+### 2) Configure when it runs
 
-In the same workflow file, update the cron schedule:
-
-    on:
-      schedule:
-        - cron: "*/5 * * * *"  # every 5 minutes (testing)
+In the same workflow file, update the cron schedule under `on.schedule`.
 
 Notes:
 
 - Cron is interpreted in **UTC**.
 - GitHub scheduled workflows are not a real-time cron service; some delay/jitter is normal.
 
-When you’re done testing, change this to a daily/weekday schedule (example: weekdays at 13:00 UTC):
+Current schedule (as configured in the workflow):
 
-    - cron: "0 13 * * 1-5"
+- **Monday–Friday at 10:00 UTC** (which is **5:00 AM EST**; during EDT it will run at **6:00 AM local**)
+
+Example:
+
+    on:
+      schedule:
+        - cron: "0 10 * * 1-5"
 
 ### 3) Enable email delivery (GitHub Notifications → your Outlook inbox)
 
@@ -91,18 +93,29 @@ Each Issue contains a digest like:
     - [Fix build pipeline](https://github.com/uclibs/ucrate/pull/123)
     - [Update dependencies](https://github.com/uclibs/ucrate/pull/130)
 
+All digest issues are labeled: `pr-digest`.
+
+## Housekeeping (bulk-closing old digest issues)
+
+This repo may accumulate many digest issues over time. Since they are labeled `pr-digest`, you can filter and bulk-close them later:
+
+- Issues → search: `label:pr-digest is:open`
+- Select all → **Mark as** → **Closed**
+
+(Closing issues will also generate notifications, so do this when convenient.)
+
 ## Notes / limitations
 
 - This repository must have **GitHub Actions enabled**.
 - Scheduled workflows only run based on the workflow file on the repo’s **default branch** (`main`).
-- Creating a new Issue every run is great for testing, but will generate a lot of Issues and emails if the schedule is frequent. Reduce the cadence once confirmed.
+- Creating a new Issue each run generates a lot of Issues and emails if the schedule is frequent.
 
 ## Customization ideas
 
-- Include PR author, age, or labels
+- Include PR author, age, labels, or review status
 - Exclude additional title prefixes (e.g., `DO NOT MERGE`, `[WIP]`)
 - Only create an Issue if the digest changes (reduces inbox noise)
-- Switch from “new Issue per run” to “update a single rolling Issue”
+- Switch from “new Issue per run” to “update a single rolling Issue” (reduces issue count)
 
 ## Repository contents
 
